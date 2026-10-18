@@ -52,3 +52,23 @@ def test_guest_join_rejects_wrong_invitation():
         rid=client.post('/api/rooms',json={'name':'Private'}).json()['id']
         client.cookies.clear()
         assert client.post(f'/api/rooms/{rid}/join',json={'secret':'wrong','name':'intruder'}).status_code==403
+
+def test_limits_direct_audio_and_approval():
+    with TestClient(app,base_url='http://localhost:8080') as host:
+        host.post('/api/dev-login')
+        rid=host.post('/api/rooms',json={'name':'Audio','mode':'music'}).json()['id']
+        assert host.patch(f'/api/rooms/{rid}',json={'music_limit':1,'require_approval':True}).status_code==200
+        secret=host.get(f'/api/rooms/{rid}').json()['join_secret']
+        with TestClient(app,base_url='http://localhost:8080') as guest:
+            tok=guest.post(f'/api/rooms/{rid}/join',json={'secret':secret,'name':'Friend'}).json()['guest_token']
+            guest.headers['Authorization']='Bearer '+tok
+            add=lambda name:guest.post(f'/api/rooms/{rid}/queue',json={'media_kind':'music','source':'direct','source_id':f'https://example.org/{name}.mp3','title':name})
+            a=add('one');assert a.status_code==200,a.text
+            assert guest.get(f'/api/rooms/{rid}').json()['pending'][0]['title']=='one'
+            assert add('two').status_code==409
+            assert guest.post(f'/api/rooms/{rid}/queue/{a.json()["id"]}/vote',json={'value':1}).status_code==200
+            assert guest.post(f'/api/rooms/{rid}/queue/{a.json()["id"]}/vote',json={'value':1}).status_code==200
+        assert host.post(f'/api/rooms/{rid}/queue/{a.json()["id"]}/moderate',json={'action':'approve'}).status_code==200
+        assert host.get(f'/api/rooms/{rid}').json()['queued'][0]['score']==1
+        qr=host.get(f'/api/rooms/{rid}/qr.png')
+        assert qr.status_code==200 and qr.headers['content-type']=='image/png' and qr.content[:8]==b'\x89PNG\r\n\x1a\n'

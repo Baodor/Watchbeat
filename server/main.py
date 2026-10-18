@@ -377,10 +377,13 @@ async def queue_item(room_id:str,request:Request,data:ItemIn):
     who=sec.actor(request)
     if data.media_kind not in ('music','video'):raise HTTPException(422,'Invalid media kind')
     if data.source not in ('apple','youtube','direct'):raise HTTPException(422,'Invalid source')
-    if (data.source=='apple') != (data.media_kind=='music'):raise HTTPException(422,'Media source mismatch')
+    if data.source=='apple' and data.media_kind!='music':raise HTTPException(422,'Apple Music items must be music')
+    if data.source=='youtube' and data.media_kind!='video':raise HTTPException(422,'YouTube items must be video')
     if data.source=='youtube':
         if not re.fullmatch(r'[A-Za-z0-9_-]{11}',data.source_id):raise HTTPException(422,'Invalid YouTube ID')
     if data.source=='direct':
+        if data.media_kind=='music' and not re.search(r'\.(mp3|m4a|aac|ogg|wav|flac)(?:\?|$)',data.source_id,re.I):
+            raise HTTPException(422,'Unsupported direct audio format')
         parsed=urlparse(data.source_id)
         if parsed.scheme!='https' or not parsed.hostname or parsed.username or parsed.password:
             raise HTTPException(422,'Direct media URLs must use HTTPS')

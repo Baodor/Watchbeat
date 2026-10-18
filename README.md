@@ -19,13 +19,13 @@ Watchbeat is a **self-hosted collaborative watch-party and music-room applicatio
 - YouTube IFrame API playback and HTML5 direct HTTPS media playback on eligible browsers, with server-coordinated play/pause/seek state and periodic drift correction.
 - Live participant presence, room chat and emoji reactions.
 - Local friend search, requests/acceptance and direct room invitations (same Watchbeat instance).
-- MusicKit on the Web integration: developer-token configuration, Apple Music catalog search, host authorization and personal playlist browser; host-only music playback in an explicitly enabled viewer.
-- Manual video output timing offset and a **beta** microphone test-tone measurement (not a production-grade multi-device calibration system).
+- MusicKit on the Web integration: developer-token configuration, Apple Music catalog search, host authorization and personal playlist browser; host-only protected music playback in an explicitly enabled viewer. Direct HTTPS audio files can also be queued and played on multiple viewers (when you have the rights).
+- Manual video/audio output timing offset and a **beta** microphone test-tone measurement (not a production-grade multi-device calibration system).
 
 ## Known limits
 
 - Apple Music is **not redistributable**. Guest search and voting are possible without an Apple Music subscription, but an **authorized player** needs the appropriate subscription. One host subscription is **not permission to restream music** to other devices. This app never proxies protected music or bypasses DRM. MusicKit player APIs and Tesla browser compatibility require real-device testing.
-- The microphone experiment estimates local acoustic capture delay. It **does not automatically synchronize multiple Bluetooth speakers**, nor does it measure a protected MusicKit stream. Multi-device video playback is best effort because browser autoplay, codec and YouTube policies differ.
+- The microphone experiment estimates local acoustic capture delay; direct audio playback uses approximate server time plus manual output offsets. It **does not automatically synchronize multiple Bluetooth speakers**, nor does it measure a protected MusicKit stream. Multi-device video playback is best effort because browser autoplay, codec and YouTube policies differ.
 - Web Push, provider-neutral audio synchronization, moderator kick/ban, encrypted at-rest provider token storage, automatic database migrations and full accessibility audits are not complete.
 - WebSockets currently use an **in-memory connection registry**. Run **one backend replica** unless a Redis pub/sub backplane is added.
 - Direct media currently supports HTTPS MP4/WebM and browser-supported files. HLS depends on the browser (no HLS.js adapter included). No backend-side URL fetching or transcoding is performed.
@@ -90,7 +90,7 @@ A developer-only demo login exists for local HTTP testing if `DEV_LOGIN_ENABLED=
 1. Sign in through Pocket ID with your passkey.
 2. Create a room and choose music/video and device mode.
 3. Open **Join QR**; friends scan it, choose a display name and join without a Watchbeat account.
-4. Add songs (Apple Music integration required) or a YouTube/direct video URL. Participants vote; the room orders queued media by score.
+4. Add Apple Music songs (MusicKit integration required), directly hosted HTTPS audio, or a YouTube/direct video URL. Participants vote; the room orders queued media by score.
 5. Start playback from a host session. On another device, switch to **Viewer**; the controller can be a different signed-in device of the same host.
 6. Use chat, reactions, skip votes and the room configuration. Rooms automatically disappear 24 hours after the last activity.
 
