@@ -62,6 +62,12 @@ async def secure_requests(request: Request, call_next):
 @app.get('/')
 def index(): return FileResponse(os.path.join(ROOT, 'index.html'))
 
+@app.get('/app.js')
+def client_js(): return FileResponse(os.path.join(ROOT, 'app.js'), media_type='text/javascript')
+
+@app.get('/app.css')
+def client_css(): return FileResponse(os.path.join(ROOT, 'app.css'), media_type='text/css')
+
 @app.get('/site.webmanifest')
 def manifest(): return FileResponse(os.path.join(ROOT, 'site.webmanifest'))
 

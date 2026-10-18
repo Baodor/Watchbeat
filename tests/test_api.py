@@ -11,6 +11,10 @@ from server.main import app
 def test_full_room_flow():
     with TestClient(app,base_url='http://localhost:8080') as host:
         assert host.get('/api/health').json()['ok']
+        assert host.get('/app.js').status_code==200
+        assert host.get('/app.css').status_code==200
+        assert host.get('/site.webmanifest').status_code==200
+        assert host.get('/assets/icons/watchbeat-180.png').status_code==200
         assert host.post('/api/dev-login').status_code==200
         assert host.get('/api/me').json()['authenticated']
         created=host.post('/api/rooms',json={'name':'Party','mode':'video','multiple_players':True})
