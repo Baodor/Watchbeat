@@ -1,0 +1,30 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.secrets/
+
+# JS / Python
+node_modules/
+dist/
+coverage/
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Temporary/runtime files
+*.log
+*.sqlite3
+*.db
+.tmp/
+uploads/

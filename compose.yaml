@@ -1,0 +1,53 @@
+services:
+  watchbeat:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://watchbeat:${POSTGRES_PASSWORD:?set password}@db:5432/watchbeat
+      SESSION_SECRET: ${SESSION_SECRET:?set session secret}
+      PUBLIC_URL: ${PUBLIC_URL:?set public https URL}
+      OIDC_ISSUER: ${OIDC_ISSUER:?set Pocket ID URL}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:?set OIDC client ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?set OIDC client secret}
+      APPLE_MUSIC_DEVELOPER_TOKEN: ${APPLE_MUSIC_DEVELOPER_TOKEN:-}
+      APPLE_MUSIC_STOREFRONT: ${APPLE_MUSIC_STOREFRONT:-de}
+      # DEV_LOGIN_ENABLED is deliberately NOT enabled in the production compose.
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${WATCHBEAT_PORT:-8080}:8080'
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/health',timeout=2)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks: [default, proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.watchbeat.rule=Host(`${WATCHBEAT_HOST:?set hostname}`)
+      - traefik.http.routers.watchbeat.entrypoints=websecure
+      - traefik.http.routers.watchbeat.tls=true
+      - traefik.http.routers.watchbeat.tls.certresolver=cloudflare
+      - traefik.http.services.watchbeat.loadbalancer.server.port=8080
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: watchbeat
+      POSTGRES_USER: watchbeat
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U watchbeat -d watchbeat"]
+      interval: 5s
+      retries: 10
+      timeout: 3s
+    networks: [default]
+volumes:
+  postgres_data:
+networks:
+  proxy:
+    external: true
