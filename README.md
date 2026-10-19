@@ -76,7 +76,7 @@ Health endpoint: `/api/health`. API documentation: `/docs` (avoid exposing devel
 
 ### Permission-denied errors during Docker startup
 
-If the container repeatedly restarts with a `PermissionError` when importing Uvicorn from `site-packages`, upgrade to the current Dockerfile and **rebuild** with `docker compose up -d --build`. Runtime Python dependencies are installed into `/opt/venv` as the unprivileged UID 10001; restarting the old image with `--no-build` will not apply this change.
+If the container repeatedly restarts with a `PermissionError` when importing Uvicorn from `site-packages`, upgrade to the current Dockerfile and **rebuild** with `docker compose up -d --build`. The current Dockerfile installs dependencies as root, explicitly makes installed Python libraries readable by the unprivileged UID 10001, then verifies imports as that user during the build. On servers with unstable Docker-build DNS, this layout can reuse the previously cached successful `pip install` layer. Run `docker compose up -d --build` to apply the Dockerfile change. If the build still reports `Temporary failure in name resolution` for PyPI, fix the builder's DNS/connectivity first; a `No matching distribution found` error after DNS failures is misleading.
 
 ### Local API smoke tests (without Pocket ID)
 
