@@ -30,6 +30,7 @@ services:
       - traefik.http.routers.watchbeat.entrypoints=websecure
       - traefik.http.routers.watchbeat.tls=true
       - traefik.http.routers.watchbeat.tls.certresolver=cloudflare
+      - traefik.http.routers.watchbeat.service=watchbeat
       - traefik.http.services.watchbeat.loadbalancer.server.port=8080
   db:
     image: postgres:17-alpine
