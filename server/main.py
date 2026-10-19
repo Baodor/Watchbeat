@@ -194,7 +194,7 @@ class InviteIn(BaseModel):
     user_id: str
 
 class MemberModerationIn(BaseModel):
-    action: str = Field(pattern='^(kick|ban)
+    action: str = Field(pattern=r'^(kick|ban)$')
 
 class SyncIn(BaseModel):
     device: str = Field(max_length=100)
