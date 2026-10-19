@@ -78,6 +78,10 @@ Health endpoint: `/api/health`. API documentation: `/docs` (avoid exposing devel
 
 If the container repeatedly restarts with a `PermissionError` when importing Uvicorn from `site-packages`, upgrade to the current Dockerfile and **rebuild** with `docker compose up -d --build`. The current Dockerfile installs dependencies as root, explicitly makes installed Python libraries readable by the unprivileged UID 10001, then verifies imports as that user during the build. On servers with unstable Docker-build DNS, this layout can reuse the previously cached successful `pip install` layer. Run `docker compose up -d --build` to apply the Dockerfile change. If the build still reports `Temporary failure in name resolution` for PyPI, fix the builder's DNS/connectivity first; a `No matching distribution found` error after DNS failures is misleading.
 
+### Missing Python package `server` on startup
+
+If the backend exits with `ModuleNotFoundError: No module named 'server'`, pull the latest Dockerfile and rebuild the image. The source is copied into `/app/server`, `PYTHONPATH=/app` and `uvicorn --app-dir /app` make the package location explicit, and the image build now tests `from server.main import app` as UID 10001. A simple container restart does **not** rebuild the image.
+
 ### Local API smoke tests (without Pocket ID)
 
 ```bash

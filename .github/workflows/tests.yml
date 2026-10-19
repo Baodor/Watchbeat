@@ -19,4 +19,4 @@ jobs:
       - name: Build the production Docker image
         run: docker build -t watchbeat:ci .
       - name: Verify Python imports as non-root runtime user
-        run: docker run --rm --entrypoint python watchbeat:ci -c "import os, uvicorn, fastapi, sqlalchemy, psycopg; assert os.geteuid() == 10001; print('Non-root Python runtime OK')"
+        run: docker run --rm --entrypoint python watchbeat:ci -c "import os; from server.main import app; assert os.geteuid() == 10001; print('Non-root Watchbeat import OK')"
