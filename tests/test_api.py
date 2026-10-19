@@ -76,3 +76,48 @@ def test_limits_direct_audio_and_approval():
         assert host.get(f'/api/rooms/{rid}').json()['queued'][0]['score']==1
         qr=host.get(f'/api/rooms/{rid}/qr.png')
         assert qr.status_code==200 and qr.headers['content-type']=='image/png' and qr.content[:8]==b'\x89PNG\r\n\x1a\n'
+def test_invite_rotation_and_guest_moderation():
+    with TestClient(app,base_url='http://localhost:8080') as host:
+        host.post('/api/dev-login')
+        rid=host.post('/api/rooms',json={'name':'Moderated'}).json()['id']
+        secret=host.get(f'/api/rooms/{rid}').json()['join_secret']
+        with TestClient(app,base_url='http://localhost:8080') as guest:
+            joined=guest.post(f'/api/rooms/{rid}/join',json={'secret':secret,'name':'Visitor'})
+            assert joined.status_code==200,joined.text
+            pid=joined.json()['participant_id']
+            guest.headers['Authorization']='Bearer '+joined.json()['guest_token']
+            assert guest.post(f'/api/rooms/{rid}/rotate-invite').status_code==403
+            assert guest.post(f'/api/rooms/{rid}/participants/{pid}/moderate',json={'action':'ban'}).status_code==403
+            assert host.post(f'/api/rooms/{rid}/participants/{pid}/moderate',json={'action':'kick'}).status_code==200
+            assert guest.get(f'/api/rooms/{rid}').status_code==403
+            assert pid not in [x['id'] for x in host.get(f'/api/rooms/{rid}').json()['participants']]
+        assert host.get(f'/api/rooms/{rid}/moderation').json()[0]['participant_id']==pid
+        assert host.post(f'/api/rooms/{rid}/rotate-invite').status_code==200
+        newer=host.get(f'/api/rooms/{rid}').json()['join_secret']
+        assert newer!=secret
+        with TestClient(app,base_url='http://localhost:8080') as newcomer:
+            assert newcomer.post(f'/api/rooms/{rid}/join',json={'secret':secret,'name':'Late'}).status_code==403
+            assert newcomer.post(f'/api/rooms/{rid}/join',json={'secret':newer,'name':'Late'}).status_code==200
+        assert host.delete(f'/api/rooms/{rid}/moderation/{pid}').status_code==200
+        assert host.get(f'/api/rooms/{rid}/moderation').json()==[]
+
+
+def test_registered_room_ban():
+    from server.db import SessionLocal, User
+    from server.security import issue
+    with TestClient(app,base_url='http://localhost:8080') as host:
+        host.post('/api/dev-login')
+        rid=host.post('/api/rooms',json={'name':'Accounts'}).json()['id']
+        secret=host.get(f'/api/rooms/{rid}').json()['join_secret']
+        with SessionLocal.begin() as db:
+            db.add(User(id='second-test-user',username='second-test-user',display_name='Other User'))
+        with TestClient(app,base_url='http://localhost:8080') as user:
+            user.headers['Authorization']='Bearer '+issue({'type':'user','sub':'second-test-user'})
+            joined=user.post(f'/api/rooms/{rid}/join',json={'secret':secret})
+            assert joined.status_code==200,joined.text
+            pid=joined.json()['participant_id']
+            assert host.post(f'/api/rooms/{rid}/participants/{pid}/moderate',json={'action':'ban'}).status_code==200
+            assert user.get(f'/api/rooms/{rid}').status_code==403
+            assert user.post(f'/api/rooms/{rid}/join',json={'secret':secret}).status_code==403
+            assert host.delete(f'/api/rooms/{rid}/moderation/{pid}').status_code==200
+            assert user.post(f'/api/rooms/{rid}/join',json={'secret':secret}).status_code==200

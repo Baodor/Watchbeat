@@ -104,3 +104,14 @@ class Invitation(Base):
     room_id: Mapped[str] = mapped_column(ForeignKey('rooms.id', ondelete='CASCADE'))
     recipient_id: Mapped[str] = mapped_column(ForeignKey('users.id'))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+class RoomExclusion(Base):
+    """An excluded room participant; registered user bans also survive a new login."""
+    __tablename__ = 'room_exclusions'
+    __table_args__ = (UniqueConstraint('room_id', 'participant_id'),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey('rooms.id', ondelete='CASCADE'), index=True)
+    participant_id: Mapped[str] = mapped_column(ForeignKey('participants.id'), index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey('users.id'), nullable=True, index=True)
+    action: Mapped[str] = mapped_column(String(12))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
