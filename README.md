@@ -12,12 +12,13 @@ Watchbeat is a **self-hosted collaborative watch-party and music-room applicatio
 
 - Docker Compose application with FastAPI, PostgreSQL, real-time WebSockets and a responsive installable PWA.
 - **Pocket ID / OIDC login** (authorization-code flow with PKCE, verified ID token and secure HTTP-only application session). **Invitation-only account registration is configured in Pocket ID**, not by a second Watchbeat password database.
-- Rooms created by authenticated hosts; anonymous guests join via locally generated QR code and choose a display name. Rooms expire after **24 hours of inactivity**.
+- Rooms created by authenticated hosts; anonymous guests join via locally generated QR code and choose a display name. Hosts can rotate the QR invitation without disconnecting present members. Rooms expire after **24 hours of inactivity**.
 - Switch a room between music and video without losing participants or queued items. Enable one-screen or multi-viewer behavior.
 - Shared queue with **one upvote, downvote, or neutral vote per queue item and participant**; highest net score plays first. Hosts configure separate guest limits for music and video and can require approval of suggestions.
 - Active-participant majority voting to skip the current item, with playback controls reserved to the host.
 - YouTube IFrame API playback and HTML5 direct HTTPS media playback on eligible browsers, with server-coordinated play/pause/seek state and periodic drift correction.
 - Live participant presence, room chat and emoji reactions.
+- Host-controlled moderation: remove/kick a participant, ban a registered Pocket ID account, revoke guest tokens, remove queued suggestions and votes, disconnect their WebSocket immediately, and unblock later.
 - Local friend search, requests/acceptance and direct room invitations (same Watchbeat instance).
 - MusicKit on the Web integration: developer-token configuration, Apple Music catalog search, host authorization and personal playlist browser; host-only protected music playback in an explicitly enabled viewer. Direct HTTPS audio files can also be queued and played on multiple viewers (when you have the rights).
 - Manual video/audio output timing offset and a **beta** microphone test-tone measurement (not a production-grade multi-device calibration system).
@@ -26,7 +27,7 @@ Watchbeat is a **self-hosted collaborative watch-party and music-room applicatio
 
 - Apple Music is **not redistributable**. Guest search and voting are possible without an Apple Music subscription, but an **authorized player** needs the appropriate subscription. One host subscription is **not permission to restream music** to other devices. This app never proxies protected music or bypasses DRM. MusicKit player APIs and Tesla browser compatibility require real-device testing.
 - The microphone experiment estimates local acoustic capture delay; direct audio playback uses approximate server time plus manual output offsets. It **does not automatically synchronize multiple Bluetooth speakers**, nor does it measure a protected MusicKit stream. Multi-device video playback is best effort because browser autoplay, codec and YouTube policies differ.
-- Web Push, provider-neutral audio synchronization, moderator kick/ban, encrypted at-rest provider token storage, automatic database migrations and full accessibility audits are not complete.
+- Web Push, provider-neutral audio synchronization, encrypted at-rest provider token storage, automatic database migrations and full accessibility audits are not complete.
 - WebSockets currently use an **in-memory connection registry**. Run **one backend replica** unless a Redis pub/sub backplane is added.
 - Direct media currently supports HTTPS MP4/WebM and browser-supported files. HLS depends on the browser (no HLS.js adapter included). No backend-side URL fetching or transcoding is performed.
 - Docker/Traefik images are configured but this repository is **not tested against your specific home-server deployment or credentials**.
@@ -129,7 +130,7 @@ The code intentionally separates `server/db.py` models, `server/security.py` OID
 - Protect your `.env` and database backups. Never commit OIDC secrets, session keys, or private MusicKit signing keys.
 - QR room links contain revocable bearer secrets. **Room QR images are generated on your server**, not by a third-party QR service.
 - Cookies are HTTP-only and Secure on an HTTPS deployment, with origin validation on state-changing API calls.
-- Room guest tokens have a maximum lifetime and are scoped to a single room. Anonymous guests can still create another identity with another browser session; per-real-human identity cannot be guaranteed.
+- Room guest tokens have a maximum lifetime and are scoped to a single room. Removed guest tokens are blocked and their connections closed. **Anonymous guests cannot be permanently identity-banned:** they may rejoin using a fresh browser session and a currently valid invitation. Rotate the QR after removing a disruptive anonymous guest to invalidate older links.
 - Direct URLs are validated, but browser compatibility and third-party hosting policies remain the operator's responsibility. Avoid treating remote URLs as safe executable content.
 - Back up Postgres before upgrading. There is no formal migration framework in this early release.
 
@@ -142,7 +143,8 @@ The code intentionally separates `server/db.py` models, `server/security.py` OID
 - [ ] Web Push subscription persistence and notifications
 - [ ] Secure persistent provider connection settings and playback-device ownership
 - [ ] Robust multi-device clock calibration and permitted acoustic sync
-- [ ] Database migrations, rate limiting, user account cleanup, kick/ban controls, end-to-end tests
+- [x] Host moderation: kick, account ban, unblock and rotate QR invitations
+- [ ] Database migrations, rate limiting, user account cleanup, end-to-end tests
 - [ ] Accessibility and responsive design audit
 
 ## Disclaimer
