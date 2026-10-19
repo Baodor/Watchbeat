@@ -74,6 +74,10 @@ The service listens inside Docker on port `8080` but **does not publish a host p
 
 Health endpoint: `/api/health`. API documentation: `/docs` (avoid exposing developer docs publicly without additional controls).
 
+### Permission-denied errors during Docker startup
+
+If the container repeatedly restarts with a `PermissionError` when importing Uvicorn from `site-packages`, upgrade to the current Dockerfile and **rebuild** with `docker compose up -d --build`. Runtime Python dependencies are installed into `/opt/venv` as the unprivileged UID 10001; restarting the old image with `--no-build` will not apply this change.
+
 ### Local API smoke tests (without Pocket ID)
 
 ```bash
