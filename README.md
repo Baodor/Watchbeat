@@ -70,7 +70,7 @@ Configure your `.env`:
 
 For Pocket ID, restrict self-registration to invite links, create a **confidential** OIDC client, set the callback URL to the one above, then grant the intended user groups access to that client. Watchbeat relies on Pocket ID for passkey enrollment and identity lifecycle.
 
-The service listens inside Docker on port `8080`; its optional local host port is bound to `127.0.0.1:8080` by default. Traefik routes `websecure` HTTPS traffic to the container over the existing `proxy` network. Change the network/labels for your own infrastructure. The PostgreSQL data is persisted in the `postgres_data` volume.
+The service listens inside Docker on port `8080` but **does not publish a host port**. Traefik routes `websecure` HTTPS traffic to the container over the existing external `proxy` network; this avoids host-port collisions on shared Docker servers. Change the network/labels for your own infrastructure. The PostgreSQL data is persisted in the `postgres_data` volume.
 
 Health endpoint: `/api/health`. API documentation: `/docs` (avoid exposing developer docs publicly without additional controls).
 
